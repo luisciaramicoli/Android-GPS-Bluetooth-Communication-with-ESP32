@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">RealTimeGPSData</string>
+    <string name="get_current_location">--- Get Current Location ---</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="country_name">Country Name</string>
+    <string name="locality">Locality</string>
+    <string name="address">Address</string>
+    <string name="get_my_current_location">Get My Current Location</string>
+    <string name="speed">Speed</string>
+    <string name="altitude">Altitude</string>
+    <string name="scan_bluetooth_devices">Scan Bluetooth Devices</string>
+    <string name="stop_connection">Stop Connection</string>
+    <string name="connection_status_disconnected">Connection Status: Disconnected</string>
+    <string name="connection_status">Connection Status: Disconnected</string>
+    <string name="device_name">Device Name</string>
+    <string name="device_address">Device Address</string>
+    <string name="dash">-</string>
+</resources>
