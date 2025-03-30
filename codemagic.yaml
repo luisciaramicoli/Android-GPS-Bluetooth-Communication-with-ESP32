@@ -4,11 +4,13 @@ workflows:
     environment:
       vars:
         GRADLEW_PATH: "./gradlew"
-      android:
-        image: latest
+      matrix:
+        - environment:
+            flutter: stable
+            xcode: latest
     scripts:
       - echo "Iniciando a compilação do APK..."
       - chmod +x $GRADLEW_PATH
       - $GRADLEW_PATH clean assembleDebug
     artifacts:
-      - build/app/outputs/apk/debug/*.apk
+      - app/build/outputs/apk/debug/*.apk
