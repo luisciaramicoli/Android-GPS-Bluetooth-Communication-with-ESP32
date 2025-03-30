@@ -12,6 +12,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothAdapter
+import com.andreseptian.realtimegpsdata.BluetoothGPSService
 
 class MainActivity : AppCompatActivity() {
 

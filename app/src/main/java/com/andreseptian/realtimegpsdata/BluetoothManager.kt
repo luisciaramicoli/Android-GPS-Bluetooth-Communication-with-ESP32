@@ -47,7 +47,7 @@ class BluetoothManager(private val context: Context) {
         }
 
         bluetoothLeScanner.startScan(scanCallback)
-    } // Adicionado fechamento da função scanDevices
+    } // Fechamento da função scanDevices
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(
