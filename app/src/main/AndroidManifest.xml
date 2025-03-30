@@ -40,7 +40,7 @@
         <!-- Serviço para rodar em segundo plano -->
         <service
             android:name=".BluetoothGPSService"
-            android:foregroundServiceType="location|bluetooth"
+           android:foregroundServiceType="location"
             android:exported="false" />
             
     </application>
