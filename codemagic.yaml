@@ -1,0 +1,11 @@
+workflows:
+  android-build:
+    name: Android APK Build
+    environment:
+      flutter: stable  # Não é necessário, mas pode ajudar a simplificar
+    scripts:
+      - echo "Iniciando a compilação do APK..."
+      - chmod +x gradlew
+      - ./gradlew clean assembleDebug
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
