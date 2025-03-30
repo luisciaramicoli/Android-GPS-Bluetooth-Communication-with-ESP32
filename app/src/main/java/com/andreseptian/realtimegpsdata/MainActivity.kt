@@ -15,8 +15,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 
 class MainActivity : AppCompatActivity() {
 
@@ -122,32 +120,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-   private fun scanBluetoothDevices() {
-    // Limpa a lista de dispositivos antes de adicionar novos
-    bluetoothDevices.clear()
-    bluetoothAdapter.notifyDataSetChanged()
+    private fun scanBluetoothDevices() {
+        bluetoothDevices.clear()
+        bluetoothAdapter.notifyDataSetChanged()
 
-    // Verifica se o Bluetooth está habilitado
-    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
-        Toast.makeText(this, "Bluetooth não está habilitado", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    try {
-        bluetoothManager.scanDevices { device ->
-            // Adiciona os dispositivos encontrados à lista e notifica o adaptador
-            if (!bluetoothDevices.contains(device)) {
-                bluetoothDevices.add(device)
-                bluetoothAdapter.notifyItemInserted(bluetoothDevices.size - 1)
+        try {
+            bluetoothManager.scanDevices { device ->
+                if (!bluetoothDevices.contains(device)) {
+                    bluetoothDevices.add(device)
+                    bluetoothAdapter.notifyItemInserted(bluetoothDevices.size - 1)
+                }
             }
+        } catch (e: SecurityException) {
+            Log.e("MainActivity", "SecurityException: ${e.message}")
+            Toast.makeText(this, "Falha ao escanear dispositivos Bluetooth devido à falta de permissões", Toast.LENGTH_SHORT).show()
         }
-    } catch (e: SecurityException) {
-        Log.e("MainActivity", "SecurityException: ${e.message}")
-        Toast.makeText(this, "Falha ao escanear dispositivos Bluetooth devido à falta de permissões", Toast.LENGTH_SHORT).show()
     }
-}
-
 
     private fun connectToBluetoothDevice(device: BluetoothDevice) {
         try {
