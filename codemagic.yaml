@@ -4,7 +4,7 @@ workflows:
     environment:
       vars:
         GRADLEW_PATH: "./gradlew"
-      java: oracle-jdk-17
+      java: openjdk-11
     scripts:
       - echo "Iniciando a compilação do APK..."
       - chmod +x $GRADLEW_PATH
