@@ -1,4 +1,3 @@
-// BluetoothManager.kt
 package com.andreseptian.realtimegpsdata
 
 import android.annotation.SuppressLint
@@ -6,15 +5,13 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
-import android.content.pm.PackageManager
 import android.util.Log
-import androidx.core.app.ActivityCompat
+import kotlin.concurrent.thread
 import java.io.OutputStream
 import java.util.UUID
-import kotlin.concurrent.thread
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+
 class BluetoothManager(private val context: Context) {
 
     private val bluetoothAdapter: BluetoothAdapter? =
@@ -23,7 +20,7 @@ class BluetoothManager(private val context: Context) {
     private var outputStream: OutputStream? = null
     private var isConnected = false
 
-    // Gunakan UUID standar untuk Serial Port Profile (SPP)
+    // UUID padrão para Serial Port Profile (SPP)
     private val uuidSpp = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
     @Suppress("unused")
@@ -32,25 +29,25 @@ class BluetoothManager(private val context: Context) {
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-   fun scanDevices(onDeviceFound: (BluetoothDevice) -> Unit) {
-    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-   val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+    fun scanDevices(onDeviceFound: (BluetoothDevice) -> Unit) {
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
 
-val scanCallback = object : ScanCallback() {
-    override fun onScanResult(callbackType: Int, result: ScanResult?) {
-        result?.device?.let {
-            // Lógica quando encontrar um dispositivo
-            onDeviceFound(it)
+        val scanCallback = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                result?.device?.let {
+                    // Lógica quando encontrar um dispositivo
+                    onDeviceFound(it)
+                }
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                Log.e("BluetoothManager", "Scan failed with error code: $errorCode")
+            }
         }
-    }
 
-    override fun onScanFailed(errorCode: Int) {
-        Log.e("BluetoothManager", "Scan failed with error code: $errorCode")
-    }
-}
-
-bluetoothLeScanner.startScan(scanCallback)
-
+        bluetoothLeScanner.startScan(scanCallback)
+    } // Adicionado fechamento da função scanDevices
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(
@@ -64,7 +61,7 @@ bluetoothLeScanner.startScan(scanCallback)
             var connected = false
             while (attempts < retryCount && !connected) {
                 try {
-                    // Gunakan UUID standar untuk koneksi
+                    // Utiliza UUID padrão para conexão
                     bluetoothSocket = device.createRfcommSocketToServiceRecord(uuidSpp)
                     bluetoothAdapter?.cancelDiscovery()
                     bluetoothSocket?.connect()
