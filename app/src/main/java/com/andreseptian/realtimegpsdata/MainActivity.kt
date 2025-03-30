@@ -1,11 +1,13 @@
 package com.andreseptian.realtimegpsdata
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,49 +25,66 @@ class MainActivity : AppCompatActivity() {
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
 
+    // Definindo código de solicitação para permissões
+    private val bluetoothPermissionsRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val bluetoothPermissionGranted = permissions[Manifest.permission.BLUETOOTH] == true &&
+                                          permissions[Manifest.permission.BLUETOOTH_ADMIN] == true &&
+                                          permissions[Manifest.permission.BLUETOOTH_CONNECT] == true &&
+                                          permissions[Manifest.permission.BLUETOOTH_SCAN] == true
+
+        val locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+
+        if (bluetoothPermissionGranted && locationPermissionGranted) {
+            startLocationUpdates()
+            scanBluetoothDevices()
+        } else {
+            Toast.makeText(this, "Permissões necessárias não concedidas", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Hubungkan elemen UI
+        // Vinculando elementos UI
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)
         speedTextView = findViewById(R.id.tv_speed)
         connectionStatusTextView = findViewById(R.id.tv_connection_status)
         bluetoothRecyclerView = findViewById(R.id.rv_bluetooth_devices)
 
-        // Periksa izin lokasi
-        val permissionHandler = PermissionHandler(this)
-        if (permissionHandler.hasLocationPermission()) {
-            startLocationUpdates()
-        } else {
-            permissionHandler.requestLocationPermission()
-        }
-
-        // Inisialisasi BluetoothManager
+        // Inicializando o BluetoothManager
         bluetoothManager = BluetoothManager(this)
 
-        // Atur RecyclerView
-        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
+        // Configurando RecyclerView
+        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device -> 
             connectToBluetoothDevice(device)
         }
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
         bluetoothRecyclerView.adapter = bluetoothAdapter
 
-        // Scan perangkat Bluetooth
+        // Botão para iniciar scan de dispositivos Bluetooth
         findViewById<TextView>(R.id.btn_scan_bluetooth).setOnClickListener {
-            ensureBluetoothPermission {
-                scanBluetoothDevices()
-            }
+            requestBluetoothPermissions()
         }
 
-        // Hentikan koneksi Bluetooth
+        // Botão para parar a conexão Bluetooth
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
             stopBluetoothConnection()
         }
     }
 
-    @SuppressLint("SetTextI18n")
+    private fun requestBluetoothPermissions() {
+        val permissions = arrayOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        bluetoothPermissionsRequest.launch(permissions)
+    }
+
     private fun startLocationUpdates() {
         val locationManager = LocationManager(this)
         locationManager.startLocationUpdates { latitude, longitude, speed ->
@@ -73,19 +92,14 @@ class MainActivity : AppCompatActivity() {
             longitudeTextView.text = "%.5f".format(longitude)
             speedTextView.text = "%.2f m/s".format(speed)
 
-            // Kirim data GPS ke perangkat Bluetooth jika terhubung
+            // Enviando dados GPS para o dispositivo Bluetooth se conectado
             if (::bluetoothManager.isInitialized) {
-                val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(
-                    latitude,
-                    longitude,
-                    speed
-                )
+                val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(latitude, longitude, speed)
                 bluetoothManager.sendData(data)
             }
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun scanBluetoothDevices() {
         bluetoothDevices.clear()
         bluetoothAdapter.notifyDataSetChanged()
@@ -99,82 +113,35 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: SecurityException) {
             Log.e("MainActivity", "SecurityException: ${e.message}")
-            Toast.makeText(
-                this,
-                "Bluetooth scan failed due to missing permissions",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Falha ao escanear dispositivos Bluetooth devido à falta de permissões", Toast.LENGTH_SHORT).show()
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private fun connectToBluetoothDevice(device: BluetoothDevice) {
         try {
             bluetoothManager.connectToDevice(device, retryCount = 3,
                 onConnectionSuccess = {
                     runOnUiThread {
-                        connectionStatusTextView.text = "Connected to ${device.name}"
-                        Toast.makeText(this, "Connected to ${device.name}", Toast.LENGTH_SHORT)
-                            .show()
+                        connectionStatusTextView.text = "Conectado a ${device.name}"
+                        Toast.makeText(this, "Conectado a ${device.name}", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onConnectionFailed = { exception ->
                     runOnUiThread {
-                        connectionStatusTextView.text = "Connection failed"
-                        Toast.makeText(
-                            this,
-                            "Connection failed: ${exception.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        connectionStatusTextView.text = "Falha na conexão"
+                        Toast.makeText(this, "Falha na conexão: ${exception.message}", Toast.LENGTH_SHORT).show()
                     }
                 })
         } catch (e: SecurityException) {
             Log.e("MainActivity", "SecurityException: ${e.message}")
-            Toast.makeText(
-                this,
-                "Bluetooth connection failed due to missing permissions",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Falha ao conectar Bluetooth devido à falta de permissões", Toast.LENGTH_SHORT).show()
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private fun stopBluetoothConnection() {
         bluetoothManager.closeConnection()
-        connectionStatusTextView.text = "Disconnected"
-        Toast.makeText(this, "Bluetooth connection stopped", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun ensureBluetoothPermission(onPermissionGranted: () -> Unit) {
-        val permissionHandler = PermissionHandler(this)
-        if (permissionHandler.hasBluetoothPermission()) {
-            onPermissionGranted()
-        } else {
-            permissionHandler.requestBluetoothPermissions()
-        }
-    }
-
-    private fun showPermissionDeniedToast() {
-        Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
-    }
-
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        val permissionHandler = PermissionHandler(this)
-        permissionHandler.handlePermissionResult(
-            requestCode,
-            grantResults,
-            onPermissionGranted = {
-                if (requestCode == 101) startLocationUpdates()
-                if (requestCode == 102) scanBluetoothDevices()
-            },
-            onPermissionDenied = { showPermissionDeniedToast() }
-        )
+        connectionStatusTextView.text = "Desconectado"
+        Toast.makeText(this, "Conexão Bluetooth parada", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {
