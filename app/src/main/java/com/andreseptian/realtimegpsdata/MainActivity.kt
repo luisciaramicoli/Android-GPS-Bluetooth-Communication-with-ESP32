@@ -1,14 +1,18 @@
 package com.andreseptian.realtimegpsdata
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.bluetooth.BluetoothDevice
-import android.content.pm.PackageManager
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -25,11 +29,9 @@ class MainActivity : AppCompatActivity() {
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
 
-    // Definindo código de solicitação para permissões
+    // Solicitação de permissões Bluetooth e Localização
     private val bluetoothPermissionsRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-        val bluetoothPermissionGranted = permissions[Manifest.permission.BLUETOOTH] == true &&
-                                          permissions[Manifest.permission.BLUETOOTH_ADMIN] == true &&
-                                          permissions[Manifest.permission.BLUETOOTH_CONNECT] == true &&
+        val bluetoothPermissionGranted = permissions[Manifest.permission.BLUETOOTH_CONNECT] == true &&
                                           permissions[Manifest.permission.BLUETOOTH_SCAN] == true
 
         val locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
@@ -46,6 +48,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Criando o canal de notificação para o serviço
+        createNotificationChannel()
+
+        // Iniciando o serviço para rodar em segundo plano
+        val serviceIntent = Intent(this, BluetoothGPSService::class.java)
+        startForegroundService(serviceIntent)
+
         // Vinculando elementos UI
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)
@@ -57,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         bluetoothManager = BluetoothManager(this)
 
         // Configurando RecyclerView
-        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device -> 
+        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
             connectToBluetoothDevice(device)
         }
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -71,13 +80,24 @@ class MainActivity : AppCompatActivity() {
         // Botão para parar a conexão Bluetooth
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
             stopBluetoothConnection()
+            stopService(serviceIntent)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "GPS_CHANNEL",
+                "Serviço de GPS",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
         }
     }
 
     private fun requestBluetoothPermissions() {
         val permissions = arrayOf(
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.ACCESS_FINE_LOCATION
