@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">RealTimeGPSData</string>
+    <string name="app_name">Bengala</string>
     <string name="get_current_location">--- Get Current Location ---</string>
     <string name="latitude">Latitude</string>
     <string name="longitude">Longitude</string>
