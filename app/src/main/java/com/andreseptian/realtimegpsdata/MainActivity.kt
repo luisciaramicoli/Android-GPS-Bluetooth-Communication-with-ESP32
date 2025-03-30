@@ -85,27 +85,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun scanBluetoothDevices() {
-        bluetoothDevices.clear()
-        bluetoothAdapter.notifyDataSetChanged()
+   @SuppressLint("NotifyDataSetChanged")
+private fun scanBluetoothDevices() {
+    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+    if (bluetoothAdapter == null) {
+        Toast.makeText(this, "Bluetooth não é suportado neste dispositivo", Toast.LENGTH_SHORT).show()
+        return
+    }
 
-        try {
-            bluetoothManager.scanDevices { device ->
-                if (!bluetoothDevices.contains(device)) {
-                    bluetoothDevices.add(device)
-                    bluetoothAdapter.notifyItemInserted(bluetoothDevices.size - 1)
+    if (!bluetoothAdapter.isEnabled) {
+        val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        startActivityForResult(enableBtIntent, 1)
+        return
+    }
+
+    bluetoothDevices.clear() // Limpa a lista de dispositivos antes de iniciar a descoberta
+    bluetoothAdapter.startDiscovery() // Iniciar a descoberta de dispositivos
+
+    // Registrar o receiver para receber eventos de dispositivos encontrados
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action
+            if (BluetoothDevice.ACTION_FOUND == action) {
+                val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                device?.let {
+                    // Adicionar dispositivo encontrado à lista
+                    if (!bluetoothDevices.contains(it)) {
+                        bluetoothDevices.add(it)
+                        bluetoothAdapter.notifyDataSetChanged()  // Atualizar a RecyclerView
+                    }
                 }
             }
-        } catch (e: SecurityException) {
-            Log.e("MainActivity", "SecurityException: ${e.message}")
-            Toast.makeText(
-                this,
-                "Bluetooth scan failed due to missing permissions",
-                Toast.LENGTH_SHORT
-            ).show()
         }
     }
+
+    // Registrar o receiver para eventos de dispositivos encontrados
+    val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+    registerReceiver(receiver, filter)
+
+    // Parar a descoberta após 30 segundos para liberar recursos
+    Handler(Looper.getMainLooper()).postDelayed({
+        bluetoothAdapter.cancelDiscovery()
+        unregisterReceiver(receiver)
+    }, 30000) // 30 segundos
+}
+
 
     @SuppressLint("SetTextI18n")
     private fun connectToBluetoothDevice(device: BluetoothDevice) {
