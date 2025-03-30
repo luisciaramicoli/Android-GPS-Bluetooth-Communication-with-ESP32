@@ -1,11 +1,19 @@
 package com.andreseptian.realtimegpsdata
 
-import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
+
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothRecyclerView: RecyclerView
 
     private lateinit var bluetoothManager: BluetoothManager
-    private lateinit var bluetoothAdapter: BluetoothDeviceAdapter
+    private lateinit var bluetoothDeviceAdapter: BluetoothDeviceAdapter
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
 
@@ -46,11 +54,11 @@ class MainActivity : AppCompatActivity() {
         bluetoothManager = BluetoothManager(this)
 
         // Atur RecyclerView
-        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
+        bluetoothDeviceAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
             connectToBluetoothDevice(device)
         }
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
-        bluetoothRecyclerView.adapter = bluetoothAdapter
+        bluetoothRecyclerView.adapter = bluetoothDeviceAdapter
 
         // Scan perangkat Bluetooth
         findViewById<TextView>(R.id.btn_scan_bluetooth).setOnClickListener {
@@ -85,51 +93,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-   @SuppressLint("NotifyDataSetChanged")
-private fun scanBluetoothDevices() {
-    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-    if (bluetoothAdapter == null) {
-        Toast.makeText(this, "Bluetooth não é suportado neste dispositivo", Toast.LENGTH_SHORT).show()
-        return
-    }
+    @SuppressLint("NotifyDataSetChanged")
+    private fun scanBluetoothDevices() {
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth não é suportado neste dispositivo", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-    if (!bluetoothAdapter.isEnabled) {
-        val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-        startActivityForResult(enableBtIntent, 1)
-        return
-    }
+        if (!bluetoothAdapter.isEnabled) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, 1)
+            return
+        }
 
-    bluetoothDevices.clear() // Limpa a lista de dispositivos antes de iniciar a descoberta
-    bluetoothAdapter.startDiscovery() // Iniciar a descoberta de dispositivos
+        bluetoothDevices.clear() // Limpa a lista de dispositivos antes de iniciar a descoberta
+        bluetoothAdapter.startDiscovery() // Iniciar a descoberta de dispositivos
 
-    // Registrar o receiver para receber eventos de dispositivos encontrados
-    val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val action = intent?.action
-            if (BluetoothDevice.ACTION_FOUND == action) {
-                val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                device?.let {
-                    // Adicionar dispositivo encontrado à lista
-                    if (!bluetoothDevices.contains(it)) {
-                        bluetoothDevices.add(it)
-                        bluetoothAdapter.notifyDataSetChanged()  // Atualizar a RecyclerView
+        // Registrar o receiver para receber eventos de dispositivos encontrados
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val action = intent?.action
+                if (BluetoothDevice.ACTION_FOUND == action) {
+                    val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                    device?.let {
+                        // Adicionar dispositivo encontrado à lista
+                        if (!bluetoothDevices.contains(it)) {
+                            bluetoothDevices.add(it)
+                            bluetoothDeviceAdapter.notifyDataSetChanged()  // Atualizar a RecyclerView
+                        }
                     }
                 }
             }
         }
+
+        // Registrar o receiver para eventos de dispositivos encontrados
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        registerReceiver(receiver, filter)
+
+        // Parar a descoberta após 30 segundos para liberar recursos
+        Handler(Looper.getMainLooper()).postDelayed({
+            bluetoothAdapter.cancelDiscovery()
+            unregisterReceiver(receiver)
+        }, 30000) // 30 segundos
     }
-
-    // Registrar o receiver para eventos de dispositivos encontrados
-    val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-    registerReceiver(receiver, filter)
-
-    // Parar a descoberta após 30 segundos para liberar recursos
-    Handler(Looper.getMainLooper()).postDelayed({
-        bluetoothAdapter.cancelDiscovery()
-        unregisterReceiver(receiver)
-    }, 30000) // 30 segundos
-}
-
 
     @SuppressLint("SetTextI18n")
     private fun connectToBluetoothDevice(device: BluetoothDevice) {
@@ -181,7 +188,6 @@ private fun scanBluetoothDevices() {
     private fun showPermissionDeniedToast() {
         Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
     }
-
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
