@@ -12,7 +12,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -26,13 +25,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothAdapter: BluetoothDeviceAdapter
+    private lateinit var locationManager: LocationManager
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
 
     // Solicitação de permissões Bluetooth e Localização
     private val bluetoothPermissionsRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val bluetoothPermissionGranted = permissions[Manifest.permission.BLUETOOTH_CONNECT] == true &&
-                                          permissions[Manifest.permission.BLUETOOTH_SCAN] == true
+                permissions[Manifest.permission.BLUETOOTH_SCAN] == true
 
         val locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
 
@@ -62,8 +62,9 @@ class MainActivity : AppCompatActivity() {
         connectionStatusTextView = findViewById(R.id.tv_connection_status)
         bluetoothRecyclerView = findViewById(R.id.rv_bluetooth_devices)
 
-        // Inicializando o BluetoothManager
+        // Inicializando o BluetoothManager e LocationManager
         bluetoothManager = BluetoothManager(this)
+        locationManager = LocationManager(this)
 
         // Configurando RecyclerView
         bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
@@ -106,7 +107,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startLocationUpdates() {
-        val locationManager = LocationManager(this)
         locationManager.startLocationUpdates { latitude, longitude, speed ->
             latitudeTextView.text = "%.5f".format(latitude)
             longitudeTextView.text = "%.5f".format(longitude)
@@ -166,7 +166,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        val locationManager = LocationManager(this)
         locationManager.stopLocationUpdates()
         bluetoothManager.closeConnection()
     }
