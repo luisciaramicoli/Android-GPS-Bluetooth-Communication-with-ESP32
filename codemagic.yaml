@@ -4,10 +4,7 @@ workflows:
     environment:
       vars:
         GRADLEW_PATH: "./gradlew"
-      matrix:
-        - environment:
-            flutter: stable
-            xcode: latest
+      java: oracle-jdk-17
     scripts:
       - echo "Iniciando a compilação do APK..."
       - chmod +x $GRADLEW_PATH
