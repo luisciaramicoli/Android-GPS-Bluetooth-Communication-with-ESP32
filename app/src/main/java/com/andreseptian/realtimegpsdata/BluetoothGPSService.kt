@@ -42,7 +42,8 @@ class BluetoothGPSService : Service() {
         return NotificationCompat.Builder(this, "ForegroundServiceChannel")
             .setContentTitle("Serviço Bluetooth GPS")
             .setContentText(content)
-            .setSmallIcon(R.drawable.ic_gps)
+            // Remove o ícone personalizado
+            .setSmallIcon(android.R.drawable.ic_notification_clear_all) // Default Android icon
             .build()
     }
 
