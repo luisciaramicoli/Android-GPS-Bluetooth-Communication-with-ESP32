@@ -12,7 +12,9 @@ import androidx.core.app.ActivityCompat
 import java.io.OutputStream
 import java.util.UUID
 import kotlin.concurrent.thread
-
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 class BluetoothManager(private val context: Context) {
 
     private val bluetoothAdapter: BluetoothAdapter? =
@@ -32,22 +34,23 @@ class BluetoothManager(private val context: Context) {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
    fun scanDevices(onDeviceFound: (BluetoothDevice) -> Unit) {
     val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-    val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+   val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
 
-    val scanCallback = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            result?.device?.let {
-                onDeviceFound(it)
-            }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            Log.e("BluetoothManager", "Scan failed with error code: $errorCode")
+val scanCallback = object : ScanCallback() {
+    override fun onScanResult(callbackType: Int, result: ScanResult?) {
+        result?.device?.let {
+            // Lógica quando encontrar um dispositivo
+            onDeviceFound(it)
         }
     }
 
-    bluetoothLeScanner.startScan(scanCallback)
+    override fun onScanFailed(errorCode: Int) {
+        Log.e("BluetoothManager", "Scan failed with error code: $errorCode")
+    }
 }
+
+bluetoothLeScanner.startScan(scanCallback)
+
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(
