@@ -30,19 +30,24 @@ class BluetoothManager(private val context: Context) {
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    fun scanDevices(onDeviceFound: (BluetoothDevice) -> Unit) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                Log.e("BluetoothManager", "Permission for Bluetooth scanning not granted")
-                return
+   fun scanDevices(onDeviceFound: (BluetoothDevice) -> Unit) {
+    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+    val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+
+    val scanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            result?.device?.let {
+                onDeviceFound(it)
             }
         }
 
-        bluetoothAdapter?.startDiscovery()
-        val receiver = BluetoothBroadcastReceiver(onDeviceFound)
-        // Receiver ini hanya didaftarkan secara dinamis.
-        context.registerReceiver(receiver, BluetoothBroadcastReceiver.intentFilter)
+        override fun onScanFailed(errorCode: Int) {
+            Log.e("BluetoothManager", "Scan failed with error code: $errorCode")
+        }
     }
+
+    bluetoothLeScanner.startScan(scanCallback)
+}
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(
