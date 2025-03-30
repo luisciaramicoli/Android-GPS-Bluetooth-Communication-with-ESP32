@@ -37,10 +37,9 @@
         </activity>
 
         <!-- Serviço para rodar em segundo plano -->
-        <service
-            android:name=".BluetoothGPSService"
-            android:foregroundServiceType="location"
-            android:exported="false" />
+      <service android:name=".BluetoothGPSService" />
+
+
             
     </application>
 
