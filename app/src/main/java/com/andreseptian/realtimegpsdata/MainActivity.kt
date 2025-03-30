@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     // Solicitação de permissões Bluetooth e Localização
     private val bluetoothPermissionsRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val bluetoothPermissionGranted = permissions[Manifest.permission.BLUETOOTH_CONNECT] == true &&
-                permissions[Manifest.permission.BLUETOOTH_SCAN] == true
+                                          permissions[Manifest.permission.BLUETOOTH_SCAN] == true
 
         val locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
 
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         locationManager = LocationManager(this)
 
         // Configurando RecyclerView
-        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
+        bluetoothAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device -> 
             connectToBluetoothDevice(device)
         }
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
