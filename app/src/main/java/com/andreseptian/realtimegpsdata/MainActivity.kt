@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -63,6 +64,36 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
             stopBluetoothConnection()
+        }
+    }
+
+    private fun ensureBluetoothPermission(onGranted: () -> Unit) {
+        val requiredPermissions = arrayOf(
+            android.Manifest.permission.BLUETOOTH,
+            android.Manifest.permission.BLUETOOTH_ADMIN,
+            android.Manifest.permission.BLUETOOTH_SCAN,
+            android.Manifest.permission.BLUETOOTH_CONNECT
+        )
+
+        val missingPermissions = requiredPermissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isEmpty()) {
+            onGranted()
+        } else {
+            requestPermissions(missingPermissions.toTypedArray(), 1001)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001) {
+            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                scanBluetoothDevices()
+            } else {
+                Toast.makeText(this, "Permissões Bluetooth negadas", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
