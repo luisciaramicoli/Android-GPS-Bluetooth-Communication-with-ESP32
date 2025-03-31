@@ -1,5 +1,5 @@
 package com.andreseptian.realtimegpsdata
-
+import android.bluetooth.BluetoothDevice
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
