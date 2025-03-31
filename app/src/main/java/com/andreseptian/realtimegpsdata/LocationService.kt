@@ -14,6 +14,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.OutputStream
 import java.util.UUID
+import android.content.pm.PackageManager
+
 
 class LocationService : Service() {
 

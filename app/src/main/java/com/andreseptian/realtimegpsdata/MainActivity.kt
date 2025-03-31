@@ -40,9 +40,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(serviceIntent)
         }
-        
-        val serviceIntent = Intent(this, LocationService::class.java)
-        startForegroundService(serviceIntent)
 
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)
