@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val serviceIntent = Intent(this, LocationService::class.java)
+        startService(serviceIntent)
+
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)
         speedTextView = findViewById(R.id.tv_speed)
@@ -69,12 +72,15 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
 
-        // Verificação para Android 12 (API 31) ou superior
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             requiredPermissions.addAll(listOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT
             ))
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            requiredPermissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         }
 
         val missingPermissions = requiredPermissions.filter {
@@ -100,9 +106,11 @@ class MainActivity : AppCompatActivity() {
     private fun startLocationUpdates() {
         val locationManager = LocationManager(this)
         locationManager.startLocationUpdates { latitude, longitude, speed ->
-            latitudeTextView.text = "%.5f".format(latitude)
-            longitudeTextView.text = "%.5f".format(longitude)
-            speedTextView.text = "%.2f m/s".format(speed)
+            runOnUiThread {
+                latitudeTextView.text = "%.5f".format(latitude)
+                longitudeTextView.text = "%.5f".format(longitude)
+                speedTextView.text = "%.2f m/s".format(speed)
+            }
             if (::bluetoothManager.isInitialized) {
                 val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(latitude, longitude, speed)
                 bluetoothManager.sendData(data)
@@ -170,7 +178,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopBluetoothConnection() {
-        bluetoothManager.closeConnection()
+        if (::bluetoothManager.isInitialized) {
+            bluetoothManager.closeConnection()
+        }
         connectionStatusTextView.text = "Desconectado"
         Toast.makeText(this, "Conexão Bluetooth encerrada", Toast.LENGTH_SHORT).show()
     }
@@ -178,6 +188,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterBluetoothReceiver()
-        bluetoothManager.closeConnection()
+        stopBluetoothConnection()
     }
 }
