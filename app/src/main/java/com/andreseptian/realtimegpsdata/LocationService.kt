@@ -1,20 +1,15 @@
 package com.andreseptian.realtimegpsdata
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.Bundle
-import android.os.IBinder
-import android.os.PowerManager
+import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.OutputStream
@@ -33,15 +28,17 @@ class LocationService : Service() {
     override fun onCreate() {
         super.onCreate()
         startForegroundService()
+        acquireWakeLock()
         initializeBluetooth()
         startLocationUpdates()
-        acquireWakeLock()
     }
 
     private fun startForegroundService() {
         createNotificationChannel()
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE
+        )
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Serviço de Localização Ativo")
@@ -54,17 +51,17 @@ class LocationService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val serviceChannel = NotificationChannel(
+        val channel = NotificationChannel(
             channelId,
             "Canal de Serviço de Localização",
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_LOW
         )
         val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(serviceChannel)
+        manager.createNotificationChannel(channel)
     }
 
     private fun initializeBluetooth() {
-        val deviceAddress = "A0:A3:B3:19:4D:D2"  // Substitua pelo endereço do dispositivo Bluetooth
+        val deviceAddress = "A0:A3:B3:19:4D:D2"  // Alterar para o endereço correto
         val device: BluetoothDevice? = bluetoothAdapter?.getRemoteDevice(deviceAddress)
 
         try {
@@ -81,27 +78,29 @@ class LocationService : Service() {
     }
 
     private fun startLocationUpdates() {
-        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         try {
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("LocationService", "Permissão de localização não concedida")
+                return
+            }
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                2000L,  // Intervalo de atualização (2 segundos)
-                1f,     // Distância mínima para atualização (1 metro)
+                2000L,
+                1f,
                 locationListener
             )
             Log.d("LocationService", "Iniciando atualizações de localização")
         } catch (e: SecurityException) {
-            Log.e("LocationService", "Permissão de localização não concedida: ${e.message}")
+            Log.e("LocationService", "Erro ao solicitar atualizações de localização: ${e.message}")
         }
     }
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
-            val latitude = location.latitude
-            val longitude = location.longitude
-            val speed = location.speed
-
-            val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(latitude, longitude, speed)
+            val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(
+                location.latitude, location.longitude, location.speed
+            )
             Log.d("LocationService", "Dados de localização: $data")
 
             if (isBluetoothConnected) {
@@ -121,11 +120,12 @@ class LocationService : Service() {
         override fun onProviderDisabled(provider: String) {}
     }
 
-    // Adiciona WakeLock para evitar que o dispositivo entre em modo de descanso
     private fun acquireWakeLock() {
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocationService::WakeLock")
-        wakeLock.acquire(10 * 60 * 1000L /*10 minutos*/)
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK, "LocationService::WakeLock"
+        )
+        wakeLock.acquire(10 * 60 * 1000L)
     }
 
     private fun releaseWakeLock() {
@@ -134,15 +134,11 @@ class LocationService : Service() {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         locationManager.removeUpdates(locationListener)
         closeBluetoothConnection()
-        releaseWakeLock()  // Libera o WakeLock ao destruir o serviço
+        releaseWakeLock()
         Log.d("LocationService", "Serviço parado")
     }
 
@@ -155,4 +151,6 @@ class LocationService : Service() {
             Log.e("LocationService", "Erro ao fechar conexão Bluetooth: ${e.message}")
         }
     }
+
+    override fun onBind(intent: Intent?): IBinder? = null
 }

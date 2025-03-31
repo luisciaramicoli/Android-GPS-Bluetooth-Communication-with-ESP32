@@ -1,6 +1,7 @@
 package com.andreseptian.realtimegpsdata
-import android.bluetooth.BluetoothDevice
+
 import android.Manifest
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -33,6 +34,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val serviceIntent = Intent(this, LocationService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        
         val serviceIntent = Intent(this, LocationService::class.java)
         startForegroundService(serviceIntent)
 
