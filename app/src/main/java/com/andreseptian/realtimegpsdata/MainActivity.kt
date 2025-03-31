@@ -1,5 +1,6 @@
 package com.andreseptian.realtimegpsdata
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver
@@ -7,14 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.Looper
-import android.widget.Toast
-import android.annotation.SuppressLint
-import android.os.Bundle
+import android.os.*
 import android.util.Log
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -41,13 +40,6 @@ class MainActivity : AppCompatActivity() {
         connectionStatusTextView = findViewById(R.id.tv_connection_status)
         bluetoothRecyclerView = findViewById(R.id.rv_bluetooth_devices)
 
-        val permissionHandler = PermissionHandler(this)
-        if (permissionHandler.hasLocationPermission()) {
-            startLocationUpdates()
-        } else {
-            permissionHandler.requestLocationPermission()
-        }
-
         bluetoothManager = BluetoothManager(this)
 
         bluetoothDeviceAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
@@ -65,35 +57,43 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
             stopBluetoothConnection()
         }
+
+        startLocationUpdates()
     }
 
     private fun ensureBluetoothPermission(onGranted: () -> Unit) {
-        val requiredPermissions = arrayOf(
-            android.Manifest.permission.BLUETOOTH,
-            android.Manifest.permission.BLUETOOTH_ADMIN,
-            android.Manifest.permission.BLUETOOTH_SCAN,
-            android.Manifest.permission.BLUETOOTH_CONNECT
+        val requiredPermissions = mutableListOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
         )
 
+        // Verificação para Android 12 (API 31) ou superior
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requiredPermissions.addAll(listOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ))
+        }
+
         val missingPermissions = requiredPermissions.filter {
-            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+            ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
         if (missingPermissions.isEmpty()) {
             onGranted()
         } else {
-            requestPermissions(missingPermissions.toTypedArray(), 1001)
+            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), 1001)
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001) {
-            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                scanBluetoothDevices()
-            } else {
-                Toast.makeText(this, "Permissões Bluetooth negadas", Toast.LENGTH_SHORT).show()
-            }
+        if (requestCode == 1001 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            scanBluetoothDevices()
+        } else {
+            Toast.makeText(this, "Permissões Bluetooth negadas", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         registerReceiver(bluetoothReceiver, filter)
 
