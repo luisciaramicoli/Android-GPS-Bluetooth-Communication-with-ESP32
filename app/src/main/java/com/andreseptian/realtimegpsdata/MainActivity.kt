@@ -2,7 +2,6 @@ package com.andreseptian.realtimegpsdata
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -35,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val serviceIntent = Intent(this, LocationService::class.java)
-        startService(serviceIntent)
+        startForegroundService(serviceIntent)
 
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)

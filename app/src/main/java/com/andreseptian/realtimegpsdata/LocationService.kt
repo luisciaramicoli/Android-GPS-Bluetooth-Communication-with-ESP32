@@ -1,5 +1,5 @@
 package com.andreseptian.realtimegpsdata
-import android.os.Bundle
+
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,7 +12,9 @@ import android.content.Intent
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.OutputStream
@@ -26,12 +28,14 @@ class LocationService : Service() {
     private val channelId = "LocationServiceChannel"
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private var isBluetoothConnected = false
+    private lateinit var wakeLock: PowerManager.WakeLock
 
     override fun onCreate() {
         super.onCreate()
         startForegroundService()
         initializeBluetooth()
         startLocationUpdates()
+        acquireWakeLock()
     }
 
     private fun startForegroundService() {
@@ -60,7 +64,7 @@ class LocationService : Service() {
     }
 
     private fun initializeBluetooth() {
-        val deviceAddress = "00:11:22:33:44:55"  // Substitua pelo endereço do dispositivo Bluetooth
+        val deviceAddress = "A0:A3:B3:19:4D:D2"  // Substitua pelo endereço do dispositivo Bluetooth
         val device: BluetoothDevice? = bluetoothAdapter?.getRemoteDevice(deviceAddress)
 
         try {
@@ -117,6 +121,19 @@ class LocationService : Service() {
         override fun onProviderDisabled(provider: String) {}
     }
 
+    // Adiciona WakeLock para evitar que o dispositivo entre em modo de descanso
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocationService::WakeLock")
+        wakeLock.acquire(10 * 60 * 1000L /*10 minutos*/)
+    }
+
+    private fun releaseWakeLock() {
+        if (wakeLock.isHeld) {
+            wakeLock.release()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
@@ -125,6 +142,7 @@ class LocationService : Service() {
         super.onDestroy()
         locationManager.removeUpdates(locationListener)
         closeBluetoothConnection()
+        releaseWakeLock()  // Libera o WakeLock ao destruir o serviço
         Log.d("LocationService", "Serviço parado")
     }
 
