@@ -16,6 +16,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat // <<-- Import necessário para formatar a data
+import java.util.Date             // <<-- Import necessário para pegar a data atual
+import java.util.Locale           // <<-- Import necessário para o formato da data
 
 class MainActivity : AppCompatActivity() {
 
@@ -116,7 +119,8 @@ class MainActivity : AppCompatActivity() {
                 speedTextView.text = "%.2f m/s".format(speed)
             }
             if (::bluetoothManager.isInitialized) {
-                val data = "Latitude: %.5f, Longitude: %.5f, Speed: %.2f m/s".format(latitude, longitude, speed)
+                // Formato da localização simplificado para "latitude,longitude"
+                val data = "%.5f, %.5f".format(latitude, longitude) // <<-- MUDANÇA: Formato simplificado
                 bluetoothManager.sendData(data)
             }
         }
@@ -131,6 +135,10 @@ class MainActivity : AppCompatActivity() {
 
         bluetoothDevices.clear()
         bluetoothDeviceAdapter.notifyDataSetChanged()
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            ensureBluetoothPermission {}
+            return
+        }
         bluetoothAdapter.startDiscovery()
 
         bluetoothReceiver = object : BroadcastReceiver() {
@@ -138,7 +146,10 @@ class MainActivity : AppCompatActivity() {
                 if (BluetoothDevice.ACTION_FOUND == intent?.action) {
                     val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
                     device?.let {
-                        if (!bluetoothDevices.contains(it)) {
+                        if (ActivityCompat.checkSelfPermission(context!!, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                           return
+                        }
+                        if (it.name != null && !bluetoothDevices.any { d -> d.address == it.address }) { // Evita duplicados
                             bluetoothDevices.add(it)
                             bluetoothDeviceAdapter.notifyDataSetChanged()
                         }
@@ -167,8 +178,16 @@ class MainActivity : AppCompatActivity() {
         try {
             bluetoothManager.connectToDevice(device, 3, {
                 runOnUiThread {
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                        return@runOnUiThread
+                    }
                     connectionStatusTextView.text = "Conectado a ${device.name}"
                     Toast.makeText(this, "Conectado a ${device.name}", Toast.LENGTH_SHORT).show()
+                    
+                    // <<-- INÍCIO DA SEÇÃO ADICIONADA -->>
+                    // Envia a data e hora para o ESP32 assim que a conexão é estabelecida
+                    sendTimeSyncMessage()
+                    // <<-- FIM DA SEÇÃO ADICIONADA -->>
                 }
             }, {
                 runOnUiThread {
@@ -180,6 +199,25 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro de permissão Bluetooth", Toast.LENGTH_SHORT).show()
         }
     }
+    
+    // <<-- INÍCIO DA FUNÇÃO NOVA -->>
+    private fun sendTimeSyncMessage() {
+        // Formata a data e hora no padrão que o ESP32 espera: AAAA-MM-DD,HH:MM:SS
+        val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd,HH:mm:ss", Locale.getDefault())
+        val currentTime = simpleDateFormat.format(Date())
+
+        // Monta a string final com o prefixo "TIME:"
+        val timeData = "TIME:$currentTime"
+
+        // Envia os dados para o ESP32
+        bluetoothManager.sendData(timeData)
+        
+        Log.d("BluetoothSend", "Enviando dados de sincronização: $timeData")
+        runOnUiThread {
+            Toast.makeText(this, "Sincronizando relógio com o dispositivo...", Toast.LENGTH_SHORT).show()
+        }
+    }
+    // <<-- FIM DA FUNÇÃO NOVA -->>
 
     private fun stopBluetoothConnection() {
         if (::bluetoothManager.isInitialized) {
