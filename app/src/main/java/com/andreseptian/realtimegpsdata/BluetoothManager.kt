@@ -1,6 +1,8 @@
 package com.andreseptian.realtimegpsdata
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
@@ -8,64 +10,86 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import java.io.IOException
-import java.util.*
+import java.io.OutputStream
+import java.util.UUID
+import kotlin.concurrent.thread
 
 class BluetoothManager(private val context: Context) {
 
+    private val bluetoothAdapter: BluetoothAdapter? =
+        (context.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager)?.adapter
     private var bluetoothSocket: BluetoothSocket? = null
+    private var outputStream: OutputStream? = null
     private var isConnected = false
 
     // UUID padrão para SPP (Serial Port Profile)
-    private val esp32Uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private val uuidSpp = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-    fun connectToDevice(device: BluetoothDevice, retries: Int, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+    @Suppress("unused")
+    fun isBluetoothEnabled(): Boolean {
+        return bluetoothAdapter?.isEnabled == true
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connectToDevice(
+        device: BluetoothDevice,
+        onConnectionSuccess: () -> Unit,
+        onConnectionFailed: (Exception) -> Unit
+    ) {
         if (isConnected) {
-            onSuccess()
+            onConnectionSuccess()
             return
         }
 
+        // Verifica permissões necessárias
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            onFailure(SecurityException("Permissão BLUETOOTH_CONNECT não concedida."))
+            onConnectionFailed(SecurityException("Permissão BLUETOOTH_CONNECT não concedida."))
             return
         }
 
-        Thread {
+        thread {
             try {
-                bluetoothSocket = device.createRfcommSocketToServiceRecord(esp32Uuid)
+                // Tenta fechar qualquer conexão anterior
+                closeConnection()
+
+                // Cria o socket e tenta conectar
+                bluetoothSocket = device.createRfcommSocketToServiceRecord(uuidSpp)
+                bluetoothAdapter?.cancelDiscovery() // Cancela a descoberta para otimizar a conexão
                 bluetoothSocket?.connect()
+                outputStream = bluetoothSocket?.outputStream
                 isConnected = true
-                onSuccess()
-            } catch (e: IOException) {
-                Log.e("BluetoothManager", "Connection failed: ${e.message}", e)
-                try {
-                    bluetoothSocket?.close()
-                } catch (e2: IOException) {
-                    Log.e("BluetoothManager", "Failed to close socket: ${e2.message}")
-                }
-                onFailure(e)
+                onConnectionSuccess()
+                Log.d("BluetoothManager", "Conectado ao dispositivo: ${device.name}")
+            } catch (e: Exception) {
+                Log.e("BluetoothManager", "Falha na conexão: ${e.message}", e)
+                closeConnection()
+                onConnectionFailed(e)
             }
-        }.start()
+        }
     }
 
     fun sendData(data: String) {
         if (isConnected) {
             try {
-                bluetoothSocket?.outputStream?.write(data.toByteArray())
-                Log.d("BluetoothManager", "Data sent: $data")
+                outputStream?.write(data.toByteArray())
+                Log.d("BluetoothManager", "Dados enviados: $data")
             } catch (e: IOException) {
-                Log.e("BluetoothManager", "Failed to send data: ${e.message}", e)
+                Log.e("BluetoothManager", "Falha ao enviar dados: ${e.message}")
                 isConnected = false
             }
+        } else {
+            Log.e("BluetoothManager", "Bluetooth não está conectado")
         }
     }
 
     fun closeConnection() {
         try {
+            outputStream?.close()
             bluetoothSocket?.close()
             isConnected = false
-            Log.d("BluetoothManager", "Bluetooth connection closed.")
+            Log.d("BluetoothManager", "Conexão Bluetooth fechada.")
         } catch (e: IOException) {
-            Log.e("BluetoothManager", "Failed to close Bluetooth socket: ${e.message}", e)
+            Log.e("BluetoothManager", "Erro ao fechar conexão: ${e.message}")
         }
     }
 }

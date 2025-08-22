@@ -6,94 +6,78 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 
+/**
+ * Classe utilitária para gerenciar as permissões de localização e Bluetooth.
+ * Simplifica a verificação e solicitação de permissões de tempo de execução.
+ */
 class PermissionHandler(private val activity: AppCompatActivity) {
 
     companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 101
-        private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 102
+        // Códigos para identificar os pedidos de permissão
+        const val ALL_PERMISSIONS_REQUEST_CODE = 101
     }
 
-    // Periksa izin lokasi
-    fun hasLocationPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(
-            activity,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
+    /**
+     * Verifica e solicita todas as permissões necessárias de uma vez.
+     *
+     * @param onGranted Callback a ser executado se todas as permissões forem concedidas.
+     * @param onDenied Callback a ser executado se alguma permissão for negada.
+     */
+    fun ensureAllPermissions(onGranted: () -> Unit, onDenied: () -> Unit) {
+        val requiredPermissions = mutableListOf<String>()
+        requiredPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        requiredPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
 
-    // Periksa izin Bluetooth (termasuk BLUETOOTH_CONNECT untuk Android 12+)
-    fun hasBluetoothPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31+
-            ActivityCompat.checkSelfPermission(
-                activity,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) == PackageManager.PERMISSION_GRANTED
+        // Permissões específicas para o Android 12 (API 31) e superior
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requiredPermissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            requiredPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
         } else {
-            // Untuk API < 31 hanya periksa BLUETOOTH dan BLUETOOTH_ADMIN
-            ActivityCompat.checkSelfPermission(
-                activity,
-                Manifest.permission.BLUETOOTH
-            ) == PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(
-                        activity,
-                        Manifest.permission.BLUETOOTH_ADMIN
-                    ) == PackageManager.PERMISSION_GRANTED
+            // Permissões para APIs mais antigas
+            requiredPermissions.add(Manifest.permission.BLUETOOTH)
+            requiredPermissions.add(Manifest.permission.BLUETOOTH_ADMIN)
         }
-    }
 
-    // Meminta izin lokasi
-    fun requestLocationPermission() {
-        ActivityCompat.requestPermissions(
-            activity,
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            LOCATION_PERMISSION_REQUEST_CODE
-        )
-    }
+        // Permissão de localização em segundo plano para Android 10 (API 29) e superior
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            requiredPermissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }
 
-    // Meminta izin Bluetooth
-    fun requestBluetoothPermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.BLUETOOTH_CONNECT
-            )
+        // Filtra e solicita apenas as permissões que ainda não foram concedidas
+        val missingPermissions = requiredPermissions.filter {
+            ActivityCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+        if (missingPermissions.isEmpty()) {
+            onGranted()
         } else {
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN
+            ActivityCompat.requestPermissions(
+                activity,
+                missingPermissions,
+                ALL_PERMISSIONS_REQUEST_CODE
             )
         }
-        ActivityCompat.requestPermissions(
-            activity,
-            permissions,
-            BLUETOOTH_PERMISSION_REQUEST_CODE
-        )
     }
 
-    // Menangani hasil permintaan izin
+    /**
+     * Lida com o resultado do pedido de permissão.
+     *
+     * @param requestCode O código do pedido original.
+     * @param grantResults Os resultados do pedido.
+     * @param onPermissionGranted Callback a ser executado se todas as permissões forem concedidas.
+     * @param onPermissionDenied Callback a ser executado se alguma permissão for negada.
+     */
     fun handlePermissionResult(
         requestCode: Int,
         grantResults: IntArray,
         onPermissionGranted: () -> Unit,
         onPermissionDenied: () -> Unit
     ) {
-        if (grantResults.isNotEmpty()) {
-            when (requestCode) {
-                LOCATION_PERMISSION_REQUEST_CODE -> {
-                    if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                        onPermissionGranted()
-                    } else {
-                        onPermissionDenied()
-                    }
-                }
-                BLUETOOTH_PERMISSION_REQUEST_CODE -> {
-                    if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                        onPermissionGranted()
-                    } else {
-                        onPermissionDenied()
-                    }
-                }
+        if (requestCode == ALL_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                onPermissionGranted()
+            } else {
+                onPermissionDenied()
             }
         }
     }

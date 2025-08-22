@@ -21,6 +21,8 @@ class LocationService : Service() {
         Log.d("LocationService", "Service created")
         locationManager = LocationManager(this)
         bluetoothManager = BluetoothManager(this)
+        // Inicia o rastreamento de localização e o envio de dados logo após a criação do serviço
+        startLocationUpdates()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -30,9 +32,6 @@ class LocationService : Service() {
         createNotificationChannel()
         val notification = createNotification()
         startForeground(1, notification)
-
-        // Inicia o rastreamento de localização e o envio de dados
-        startLocationUpdates()
 
         // Garante que o serviço seja reiniciado se for encerrado pelo sistema
         return START_STICKY
