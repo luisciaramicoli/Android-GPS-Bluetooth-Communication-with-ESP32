@@ -19,6 +19,16 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
+    // --- Nome do seu ESP32 ---
+    // Substitua 'NOME_DO_SEU_ESP32' pelo nome exato que você configurou no seu ESP32.
+    private val esp32Name = "BengalaInteligente" 
+    
+    // --- Endereço MAC do seu ESP32 (opcional) ---
+    // Você pode usar o endereço MAC para uma conexão mais robusta.
+    // Substitua 'XX:XX:XX:XX:XX:XX' pelo endereço MAC real.
+    // Use um deles (nome OU MAC), mas o MAC é mais confiável.
+    private val esp32MacAddress = "68:25:DD:F1:C1:C2" 
+
     private lateinit var latitudeTextView: TextView
     private lateinit var longitudeTextView: TextView
     private lateinit var speedTextView: TextView
@@ -34,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Inicializa o serviço de localização
         val serviceIntent = Intent(this, LocationService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
@@ -41,6 +52,7 @@ class MainActivity : AppCompatActivity() {
             startService(serviceIntent)
         }
 
+        // Inicializa as views
         latitudeTextView = findViewById(R.id.tv_latitude)
         longitudeTextView = findViewById(R.id.tv_longitude)
         speedTextView = findViewById(R.id.tv_speed)
@@ -65,7 +77,14 @@ class MainActivity : AppCompatActivity() {
             stopBluetoothConnection()
         }
 
+        // Inicia a atualização de localização
         startLocationUpdates()
+        
+        // --- CHAMADA PARA A FUNÇÃO DE CONEXÃO AUTOMÁTICA ---
+        // A lógica de conexão automática é iniciada logo após a inicialização da tela.
+        ensureBluetoothPermission {
+            autoConnectToEsp32()
+        }
     }
 
     private fun ensureBluetoothPermission(onGranted: () -> Unit) {
@@ -101,7 +120,8 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1001 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            scanBluetoothDevices()
+            // Se as permissões forem concedidas, tente a conexão automática novamente
+            autoConnectToEsp32()
         } else {
             Toast.makeText(this, "Permissões Bluetooth negadas", Toast.LENGTH_SHORT).show()
         }
@@ -122,25 +142,69 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun scanBluetoothDevices() {
+    // --- FUNÇÃO PARA CONEXÃO AUTOMÁTICA ---
+    private fun autoConnectToEsp32() {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
             Toast.makeText(this, "Bluetooth não suportado ou desligado", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Tenta encontrar o ESP32 entre os dispositivos pareados
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            val pairedDevices = bluetoothAdapter.bondedDevices
+            for (device in pairedDevices) {
+                // Checa pelo nome ou endereço MAC
+                if (device.name == esp32Name || device.address == esp32MacAddress) {
+                    Log.d("MainActivity", "ESP32 encontrado nos pareados: ${device.name}")
+                    connectToBluetoothDevice(device)
+                    return // Conectou, pode sair da função
+                }
+            }
+        }
+        
+        // Se não encontrar nos pareados, inicia a busca (Discovery)
+        Log.d("MainActivity", "ESP32 não encontrado nos pareados. Iniciando busca...")
+        startDiscoveryForAutoConnect()
+    }
+
+    // --- FUNÇÃO DE BUSCA PARA CONEXÃO AUTOMÁTICA ---
+    private fun startDiscoveryForAutoConnect() {
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
+            return
+        }
+        
+        // Garante que a descoberta anterior seja cancelada
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+            bluetoothAdapter.cancelDiscovery()
+        }
+
+        // Limpa a lista para a nova busca
         bluetoothDevices.clear()
         bluetoothDeviceAdapter.notifyDataSetChanged()
-        bluetoothAdapter.startDiscovery()
 
         bluetoothReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (BluetoothDevice.ACTION_FOUND == intent?.action) {
                     val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
                     device?.let {
-                        if (!bluetoothDevices.contains(it)) {
-                            bluetoothDevices.add(it)
-                            bluetoothDeviceAdapter.notifyDataSetChanged()
+                        // Se o dispositivo encontrado for o ESP32, conecte e pare a busca
+                        if (it.name == esp32Name || it.address == esp32MacAddress) {
+                            Log.d("MainActivity", "ESP32 encontrado durante a busca: ${it.name}")
+                            connectToBluetoothDevice(it)
+                            
+                            // Cancela a busca e desregistra o receiver para economizar bateria
+                            if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+                                bluetoothAdapter.cancelDiscovery()
+                            }
+                            unregisterBluetoothReceiver()
+                        } else {
+                            // Adiciona outros dispositivos à lista de exibição, como na lógica original
+                            if (!bluetoothDevices.contains(it)) {
+                                bluetoothDevices.add(it)
+                                bluetoothDeviceAdapter.notifyDataSetChanged()
+                            }
                         }
                     }
                 }
@@ -150,9 +214,18 @@ class MainActivity : AppCompatActivity() {
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         registerReceiver(bluetoothReceiver, filter)
 
+        // Inicia a descoberta
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+            bluetoothAdapter.startDiscovery()
+        }
+
+        // Adiciona um tempo limite para a busca, caso não encontre o ESP32
         Handler(Looper.getMainLooper()).postDelayed({
-            bluetoothAdapter.cancelDiscovery()
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+                bluetoothAdapter.cancelDiscovery()
+            }
             unregisterBluetoothReceiver()
+            Log.d("MainActivity", "Busca de dispositivos encerrada.")
         }, 30000)
     }
 
