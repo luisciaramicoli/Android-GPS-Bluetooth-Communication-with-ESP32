@@ -1,84 +1,60 @@
 package com.andreseptian.realtimegpsdata
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.app.ActivityCompat
+import androidx.recyclerview.widget.RecyclerView
+import android.bluetooth.BluetoothDevice
 
-/**
- * Classe utilitária para gerenciar as permissões de localização e Bluetooth.
- * Simplifica a verificação e solicitação de permissões de tempo de execução.
- */
-class PermissionHandler(private val activity: AppCompatActivity) {
+class BluetoothDeviceAdapter(
+    private val devices: List<BluetoothDevice>,
+    private val onDeviceSelected: (BluetoothDevice) -> Unit
+) : RecyclerView.Adapter<BluetoothDeviceAdapter.DeviceViewHolder>() {
 
-    companion object {
-        // Códigos para identificar os pedidos de permissão
-        const val ALL_PERMISSIONS_REQUEST_CODE = 101
+    inner class DeviceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val deviceName: TextView = itemView.findViewById(R.id.tv_device_name)
+        val deviceAddress: TextView = itemView.findViewById(R.id.tv_device_address)
     }
 
-    /**
-     * Verifica e solicita todas as permissões necessárias de uma vez.
-     *
-     * @param onGranted Callback a ser executado se todas as permissões forem concedidas.
-     * @param onDenied Callback a ser executado se alguma permissão for negada.
-     */
-    fun ensureAllPermissions(onGranted: () -> Unit, onDenied: () -> Unit) {
-        val requiredPermissions = mutableListOf<String>()
-        requiredPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        requiredPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DeviceViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bluetooth_device, parent, false)
+        return DeviceViewHolder(view)
+    }
 
-        // Permissões específicas para o Android 12 (API 31) e superior
+    @SuppressLint("SetTextI18n")
+    override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
+        val device = devices[position]
+
+        // Periksa izin sebelum mengakses nama dan alamat perangkat
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requiredPermissions.add(Manifest.permission.BLUETOOTH_SCAN)
-            requiredPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+            if (ActivityCompat.checkSelfPermission(
+                    holder.itemView.context,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                holder.deviceName.text = device.name ?: "Unknown Device"
+                holder.deviceAddress.text = device.address
+            } else {
+                holder.deviceName.text = "Permission required"
+                holder.deviceAddress.text = "N/A"
+            }
         } else {
-            // Permissões para APIs mais antigas
-            requiredPermissions.add(Manifest.permission.BLUETOOTH)
-            requiredPermissions.add(Manifest.permission.BLUETOOTH_ADMIN)
+            holder.deviceName.text = device.name ?: "Unknown Device"
+            holder.deviceAddress.text = device.address
         }
 
-        // Permissão de localização em segundo plano para Android 10 (API 29) e superior
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            requiredPermissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        }
-
-        // Filtra e solicita apenas as permissões que ainda não foram concedidas
-        val missingPermissions = requiredPermissions.filter {
-            ActivityCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
-        }.toTypedArray()
-
-        if (missingPermissions.isEmpty()) {
-            onGranted()
-        } else {
-            ActivityCompat.requestPermissions(
-                activity,
-                missingPermissions,
-                ALL_PERMISSIONS_REQUEST_CODE
-            )
+        holder.itemView.setOnClickListener {
+            onDeviceSelected(device)
         }
     }
 
-    /**
-     * Lida com o resultado do pedido de permissão.
-     *
-     * @param requestCode O código do pedido original.
-     * @param grantResults Os resultados do pedido.
-     * @param onPermissionGranted Callback a ser executado se todas as permissões forem concedidas.
-     * @param onPermissionDenied Callback a ser executado se alguma permissão for negada.
-     */
-    fun handlePermissionResult(
-        requestCode: Int,
-        grantResults: IntArray,
-        onPermissionGranted: () -> Unit,
-        onPermissionDenied: () -> Unit
-    ) {
-        if (requestCode == ALL_PERMISSIONS_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                onPermissionGranted()
-            } else {
-                onPermissionDenied()
-            }
-        }
+    override fun getItemCount(): Int {
+        return devices.size
     }
 }
