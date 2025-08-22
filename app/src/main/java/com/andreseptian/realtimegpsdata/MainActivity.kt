@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothRecyclerView: RecyclerView
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothDeviceAdapter: BluetoothDeviceAdapter
-    private lateinit var locationManager: LocationManager // Adicionando a instância de LocationManager
+    private lateinit var locationManager: LocationManager
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
     private var bluetoothReceiver: BroadcastReceiver? = null
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         bluetoothRecyclerView = findViewById(R.id.rv_bluetooth_devices)
 
         bluetoothManager = BluetoothManager(this)
-        locationManager = LocationManager(this) // Inicializando a instância de LocationManager
+        locationManager = LocationManager(this)
 
         bluetoothDeviceAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
             connectToBluetoothDevice(device)
@@ -153,13 +153,16 @@ class MainActivity : AppCompatActivity() {
         // Tenta encontrar o ESP32 entre os dispositivos pareados
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
             val pairedDevices = bluetoothAdapter.bondedDevices
-            for (device in pairedDevices) {
-                // Checa pelo nome ou endereço MAC
-                if (device.name == esp32Name || device.address == esp32MacAddress) {
-                    Log.d("MainActivity", "ESP32 encontrado nos pareados: ${device.name}")
-                    connectToBluetoothDevice(device)
-                    return // Conectou, pode sair da função
-                }
+            val esp32Device = pairedDevices.firstOrNull { it.name == esp32Name || it.address == esp32MacAddress }
+
+            if (esp32Device != null) {
+                Log.d("MainActivity", "ESP32 encontrado nos pareados: ${esp32Device.name}. Tentando conectar...")
+                // Tenta conectar. Se falhar, inicia a busca.
+                connectToBluetoothDevice(esp32Device, onFailure = {
+                    Log.d("MainActivity", "Conexão com dispositivo pareado falhou. Iniciando busca de descoberta.")
+                    startDiscoveryForAutoConnect()
+                })
+                return
             }
         }
         
@@ -236,7 +239,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun connectToBluetoothDevice(device: BluetoothDevice) {
+    private fun connectToBluetoothDevice(device: BluetoothDevice, onFailure: (() -> Unit)? = null) {
         try {
             bluetoothManager.connectToDevice(device, 3, {
                 runOnUiThread {
@@ -248,6 +251,7 @@ class MainActivity : AppCompatActivity() {
                     connectionStatusTextView.text = "Conexão falhou"
                     Toast.makeText(this, "Falha: ${it.message}", Toast.LENGTH_SHORT).show()
                 }
+                onFailure?.invoke() // Chama o callback de falha se houver um
             })
         } catch (e: SecurityException) {
             Toast.makeText(this, "Erro de permissão Bluetooth", Toast.LENGTH_SHORT).show()
