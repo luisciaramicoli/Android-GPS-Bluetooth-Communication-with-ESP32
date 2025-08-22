@@ -177,24 +177,17 @@
                     android:gravity="center"
                     android:orientation="horizontal">
 
-                    <Button
-                        android:id="@+id/btn_scan_bluetooth"
-                        style="@style/Widget.AppCompat.Button.Colored"
+                   <Button
+                        android:id="@+id/btn_start_service"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:backgroundTint="@color/verde_acento"
-                        android:text="@string/scan_bluetooth_devices"
-                        android:textColor="@color/verde_escuro" />
+                        android:text="Iniciar Serviço" />
 
                     <Button
-                        android:id="@+id/btn_stop_connection"
-                        style="@style/Widget.AppCompat.Button.Colored"
+                        android:id="@+id/btn_stop_service"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:backgroundTint="@android:color/holo_red_dark"
-                        android:text="@string/stop_connection"
-                        android:textColor="@color/branco_quente" />
+                        android:text="Parar Serviço" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView

@@ -50,7 +50,8 @@ class LocationBluetoothService : Service() {
 
     // --- Variáveis de Bluetooth ---
     private lateinit var bluetoothManager: BluetoothManager
-    private lateinit var bluetoothAdapter: BluetoothAdapter
+    // CORREÇÃO: Tornamos o adapter nulo para tratar casos onde o Bluetooth não está disponível.
+    private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothLeScanner: BluetoothLeScanner? = null
     private var bluetoothGatt: BluetoothGatt? = null
     private var locationCharacteristic: BluetoothGattCharacteristic? = null
@@ -64,11 +65,19 @@ class LocationBluetoothService : Service() {
         Log.d(TAG, "Serviço onCreate")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        // CORREÇÃO: Atribuição ao adapter nulo.
         bluetoothAdapter = bluetoothManager.adapter
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "Serviço onStartCommand")
+        
+        // CORREÇÃO: Verifica se o Bluetooth está disponível antes de continuar.
+        if (bluetoothAdapter == null) {
+            Log.e(TAG, "Dispositivo não suporta Bluetooth. Parando serviço.")
+            stopSelf()
+            return START_NOT_STICKY
+        }
         
         createNotificationChannel()
         val notification = createNotification()
@@ -156,6 +165,12 @@ class LocationBluetoothService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun startBluetoothScan() {
+        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
+            Log.e(TAG, "Bluetooth não está habilitado ou não está disponível.")
+            // Você pode tentar solicitar a ativação do Bluetooth aqui ou apenas parar.
+            return
+        }
+
         if (!checkBluetoothPermissions()) {
              Log.e(TAG, "Permissões de Bluetooth não concedidas. Parando serviço.")
              stopSelf()
@@ -167,7 +182,7 @@ class LocationBluetoothService : Service() {
             return
         }
 
-        bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+        bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         val scanFilter = ScanFilter.Builder()
             .setDeviceAddress(ESP32_DEVICE_ADDRESS)
             .build()
@@ -223,6 +238,7 @@ class LocationBluetoothService : Service() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun disconnectFromDevice() {
         if (bluetoothGatt != null && checkBluetoothPermissions()) {
             Log.d(TAG, "Desconectando do dispositivo...")
