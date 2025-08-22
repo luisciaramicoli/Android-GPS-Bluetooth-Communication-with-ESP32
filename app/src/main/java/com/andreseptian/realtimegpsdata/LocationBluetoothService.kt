@@ -133,11 +133,10 @@ class LocationBluetoothService : Service() {
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         if (checkLocationPermission()) {
-            val locationRequest = LocationRequest.create().apply {
-                interval = LOCATION_UPDATE_INTERVAL
-                fastestInterval = FASTEST_LOCATION_UPDATE_INTERVAL
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            }
+            // CORREÇÃO: Usando a API moderna LocationRequest.Builder para maior compatibilidade.
+            val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, LOCATION_UPDATE_INTERVAL)
+                .setMinUpdateIntervalMillis(FASTEST_LOCATION_UPDATE_INTERVAL)
+                .build()
 
             locationCallback = object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
@@ -161,7 +160,11 @@ class LocationBluetoothService : Service() {
     }
 
     private fun checkLocationPermission(): Boolean {
-        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val fineLocationGranted = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!fineLocationGranted) {
+            Log.e(TAG, "Permissão ACCESS_FINE_LOCATION negada.")
+        }
+        return fineLocationGranted
     }
 
     // --- Lógica de Bluetooth LE ---
