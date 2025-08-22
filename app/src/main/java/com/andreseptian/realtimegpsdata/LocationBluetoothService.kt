@@ -6,7 +6,14 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.bluetooth.*
+// CORREÇÃO: Importações explícitas para evitar conflitos
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
@@ -50,7 +57,6 @@ class LocationBluetoothService : Service() {
 
     // --- Variáveis de Bluetooth ---
     private lateinit var bluetoothManager: BluetoothManager
-    // CORREÇÃO: Tornamos o adapter nulo para tratar casos onde o Bluetooth não está disponível.
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothLeScanner: BluetoothLeScanner? = null
     private var bluetoothGatt: BluetoothGatt? = null
@@ -65,14 +71,12 @@ class LocationBluetoothService : Service() {
         Log.d(TAG, "Serviço onCreate")
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        // CORREÇÃO: Atribuição ao adapter nulo.
         bluetoothAdapter = bluetoothManager.adapter
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "Serviço onStartCommand")
         
-        // CORREÇÃO: Verifica se o Bluetooth está disponível antes de continuar.
         if (bluetoothAdapter == null) {
             Log.e(TAG, "Dispositivo não suporta Bluetooth. Parando serviço.")
             stopSelf()
@@ -86,7 +90,6 @@ class LocationBluetoothService : Service() {
         startLocationUpdates()
         startBluetoothScan()
 
-        // Se o sistema matar o serviço, ele será recriado e o onStartCommand será chamado novamente.
         return START_STICKY
     }
 
@@ -99,7 +102,7 @@ class LocationBluetoothService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? {
-        return null // Não permitimos binding para este serviço
+        return null
     }
 
     // --- Lógica de Notificação ---
@@ -120,7 +123,7 @@ class LocationBluetoothService : Service() {
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("GPS e Bluetooth Ativos")
             .setContentText("Enviando localização para o dispositivo...")
-            .setSmallIcon(R.drawable.ic_stat_name) // IMPORTANTE: Crie este ícone em res/drawable
+            .setSmallIcon(R.drawable.ic_stat_name)
             .setOngoing(true)
             .build()
     }
@@ -147,7 +150,7 @@ class LocationBluetoothService : Service() {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         } else {
             Log.e(TAG, "Permissão de localização não concedida. Parando serviço.")
-            stopSelf() // Para o serviço se não tiver permissão
+            stopSelf()
         }
     }
 
@@ -167,7 +170,6 @@ class LocationBluetoothService : Service() {
     private fun startBluetoothScan() {
         if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
             Log.e(TAG, "Bluetooth não está habilitado ou não está disponível.")
-            // Você pode tentar solicitar a ativação do Bluetooth aqui ou apenas parar.
             return
         }
 
@@ -195,14 +197,12 @@ class LocationBluetoothService : Service() {
         bluetoothLeScanner?.startScan(listOf(scanFilter), scanSettings, leScanCallback)
         Log.d(TAG, "Iniciando scan para o dispositivo: $ESP32_DEVICE_ADDRESS")
 
-        // Para o scan após um tempo para economizar bateria
         handler.postDelayed({
             if (isScanning) {
                 stopBluetoothScan()
-                // Se não encontrou, tenta novamente após um tempo
                 handler.postDelayed({ startBluetoothScan() }, 10000)
             }
-        }, 30000) // 30 segundos de scan
+        }, 30000)
     }
 
     @SuppressLint("MissingPermission")
@@ -255,13 +255,11 @@ class LocationBluetoothService : Service() {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.i(TAG, "Conectado ao dispositivo GATT.")
-                    // Após conectar, busca pelos serviços
                     gatt.discoverServices()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.i(TAG, "Desconectado do dispositivo GATT.")
                     disconnectFromDevice()
-                    // Tenta reconectar
                     handler.postDelayed({ startBluetoothScan() }, 5000)
                 }
             }
@@ -292,7 +290,6 @@ class LocationBluetoothService : Service() {
     @SuppressLint("MissingPermission")
     private fun sendLocationData(location: Location) {
         if (bluetoothGatt == null || locationCharacteristic == null || !checkBluetoothPermissions()) {
-            // Log.w(TAG, "Não é possível enviar dados: GATT não conectado ou característica nula.")
             return
         }
 
@@ -313,7 +310,6 @@ class LocationBluetoothService : Service() {
             return ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
                    ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         } else {
-            // Para versões mais antigas, as permissões são declaradas no manifest e concedidas na instalação.
             return true
         }
     }
