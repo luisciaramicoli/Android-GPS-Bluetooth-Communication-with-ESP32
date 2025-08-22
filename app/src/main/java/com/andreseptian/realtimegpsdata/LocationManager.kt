@@ -1,54 +1,44 @@
-
 package com.andreseptian.realtimegpsdata
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.content.Context
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import android.content.pm.PackageManager
+import android.os.Looper
+import android.util.Log
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.*
 
 class LocationManager(private val context: Context) {
 
     private val fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
     private var locationCallback: LocationCallback? = null
 
-    @SuppressLint("MissingPermission")
-    fun startLocationUpdates(onLocationUpdated: (latitude: Double, longitude: Double, speed: Float) -> Unit) {
-        val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY, // Prioritas tinggi untuk akurasi
-            5000 // Interval pembaruan dalam milidetik (5 detik)
-        ).apply {
-            setMinUpdateIntervalMillis(2000) // Interval pembaruan tercepat (2 detik)
-            setWaitForAccurateLocation(false) // Jangan menunggu lokasi akurat jika tidak tersedia
-        }.build()
+    fun startLocationUpdates(onLocationUpdate: (Double, Double, Float) -> Unit) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.w("LocationManager", "Permissions not granted for location updates.")
+            return
+        }
+
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+            .setMinUpdateIntervalMillis(500)
+            .build()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-                for (location in locationResult.locations) {
-                    if (location != null) {
-                        val latitude = location.latitude
-                        val longitude = location.longitude
-                        val speed = location.speed
-                        onLocationUpdated(latitude, longitude, speed)
-                    }
+                locationResult.lastLocation?.let { location ->
+                    onLocationUpdate(location.latitude, location.longitude, location.speed)
                 }
             }
         }
 
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback!!,
-            context.mainLooper
-        )
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback!!, Looper.getMainLooper())
     }
 
     fun stopLocationUpdates() {
         locationCallback?.let {
             fusedLocationClient.removeLocationUpdates(it)
+            Log.d("LocationManager", "Location updates stopped.")
         }
     }
 }
