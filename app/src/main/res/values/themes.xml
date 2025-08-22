@@ -1,9 +1,14 @@
 <resources>
-    <!-- Base application theme. -->
-    <style name="Base.Theme.RealTimeGPSData" parent="Theme.Material3.Light.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="Theme.RealtimeGPSData" parent="Theme.MaterialComponents.Light.DarkActionBar">
+        <!-- Defina as cores da sua paleta aqui -->
+        <item name="colorPrimary">@color/verde_escuro</item>
+        <item name="colorPrimaryVariant">@color/verde_claro</item>
+        <item name="colorOnPrimary">@color/branco_quente</item>
+        <item name="colorSecondary">@color/verde_acento</item>
+        <item name="colorSecondaryVariant">@color/verde_claro</item>
+        <item name="colorOnSecondary">@color/verde_escuro</item>
+        <item name="android:colorBackground">@color/verde_escuro</item>
+        <item name="colorSurface">@color/verde_claro</item>
+        <item name="colorOnSurface">@color/branco_quente</item>
     </style>
-
-    <style name="Theme.RealTimeGPSData" parent="Base.Theme.RealTimeGPSData" />
 </resources>
