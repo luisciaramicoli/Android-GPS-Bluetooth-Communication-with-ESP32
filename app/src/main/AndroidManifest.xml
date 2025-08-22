@@ -2,19 +2,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissões de Bluetooth e Localização -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <!-- Permissões de Bluetooth (para Android 12+) -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Permissões de Bluetooth (Legado, para Android 11 e inferior) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+    <!-- Permissões de Localização -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Permissão crítica para localização em segundo plano -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <!-- Permissão para o serviço de primeiro plano -->
+    <!-- Permissões para Serviço em Primeiro Plano -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Permissão específica para serviço de localização em primeiro plano (Android 14+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
 
     <application
         android:allowBackup="true"
@@ -36,9 +41,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Definição do serviço de localização -->
+        <!-- 
+        CORREÇÃO: O nome do serviço foi atualizado para corresponder à classe que criamos.
+        -->
         <service
-            android:name=".LocationService"
+            android:name=".LocationBluetoothService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
