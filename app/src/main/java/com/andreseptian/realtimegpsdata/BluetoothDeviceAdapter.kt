@@ -1,21 +1,10 @@
 package com.andreseptian.realtimegpsdata
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
-import android.bluetooth.BluetoothDevice
 
 /**
  * Classe utilitária para gerenciar as permissões de localização e Bluetooth.
@@ -91,16 +80,5 @@ class PermissionHandler(private val activity: AppCompatActivity) {
                 onPermissionDenied()
             }
         }
-    }
-}
-
-/**
- * Este BroadcastReceiver é acionado quando o serviço de localização é encerrado
- * e tenta reiniciá-lo automaticamente.
- */
-class RestartServiceReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        Log.d("RestartServiceReceiver", "Serviço LocationService recebido. Tentando reiniciar o serviço.")
-        context.startService(Intent(context, LocationService::class.java))
     }
 }

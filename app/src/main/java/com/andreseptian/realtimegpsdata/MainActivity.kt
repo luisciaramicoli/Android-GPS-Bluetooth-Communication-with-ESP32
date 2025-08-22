@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothDeviceAdapter: BluetoothDeviceAdapter
     private lateinit var locationManager: LocationManager
+    private lateinit var permissionHandler: PermissionHandler // Instância do PermissionHandler
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
     private var bluetoothReceiver: BroadcastReceiver? = null
@@ -62,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         bluetoothManager = BluetoothManager(this)
         locationManager = LocationManager(this)
+        permissionHandler = PermissionHandler(this) // Inicializa o PermissionHandler
 
         bluetoothDeviceAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
             connectToBluetoothDevice(device)
@@ -71,9 +73,10 @@ class MainActivity : AppCompatActivity() {
 
         // O botão de escanear agora inicia a descoberta
         findViewById<TextView>(R.id.btn_scan_bluetooth).setOnClickListener {
-            ensureBluetoothPermission {
-                startDiscoveryForAutoConnect()
-            }
+            permissionHandler.ensureAllPermissions(
+                onGranted = { startDiscoveryForAutoConnect() },
+                onDenied = { Toast.makeText(this, "Permissões necessárias para escanear dispositivos negadas.", Toast.LENGTH_SHORT).show() }
+            )
         }
 
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
@@ -81,51 +84,30 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Garante que as permissões são verificadas e a conexão automática e a localização são iniciadas
-        ensureBluetoothPermission {
-            autoConnectToEsp32()
-            startLocationUpdates()
-        }
-    }
-
-    private fun ensureBluetoothPermission(onGranted: () -> Unit) {
-        val requiredPermissions = mutableListOf(
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+        permissionHandler.ensureAllPermissions(
+            onGranted = {
+                autoConnectToEsp32()
+                startLocationUpdates()
+            },
+            onDenied = {
+                Toast.makeText(this, "Permissões de localização e/ou Bluetooth negadas. O aplicativo não pode funcionar corretamente.", Toast.LENGTH_LONG).show()
+            }
         )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requiredPermissions.addAll(listOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ))
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            requiredPermissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        }
-
-        val missingPermissions = requiredPermissions.filter {
-            ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (missingPermissions.isEmpty()) {
-            onGranted()
-        } else {
-            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), 1001)
-        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            // Se as permissões forem concedidas, tente a conexão automática e inicie as atualizações de localização
-            autoConnectToEsp32()
-            startLocationUpdates()
-        } else {
-            Toast.makeText(this, "Permissões Bluetooth e/ou de Localização negadas", Toast.LENGTH_SHORT).show()
-        }
+        permissionHandler.handlePermissionResult(
+            requestCode,
+            grantResults,
+            onPermissionGranted = {
+                autoConnectToEsp32()
+                startLocationUpdates()
+            },
+            onPermissionDenied = {
+                Toast.makeText(this, "Permissões Bluetooth e/ou de Localização negadas", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     private fun startLocationUpdates() {
@@ -158,10 +140,16 @@ class MainActivity : AppCompatActivity() {
             if (esp32Device != null) {
                 Log.d("MainActivity", "ESP32 encontrado nos pareados: ${esp32Device.name}. Tentando conectar...")
                 // Tenta conectar. Se falhar, inicia a busca.
-                connectToBluetoothDevice(esp32Device, onFailure = {
-                    Log.d("MainActivity", "Conexão com dispositivo pareado falhou. Iniciando busca de descoberta.")
-                    startDiscoveryForAutoConnect()
-                })
+                bluetoothManager.connectToDevice(
+                    esp32Device,
+                    onConnectionSuccess = {
+                        // Conexão bem-sucedida
+                    },
+                    onConnectionFailed = {
+                        Log.d("MainActivity", "Conexão com dispositivo pareado falhou. Iniciando busca de descoberta.")
+                        startDiscoveryForAutoConnect()
+                    }
+                )
                 return
             }
         }
@@ -190,7 +178,12 @@ class MainActivity : AppCompatActivity() {
         bluetoothReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (BluetoothDevice.ACTION_FOUND == intent?.action) {
-                    val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                    val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    }
                     device?.let {
                         // Se o dispositivo encontrado for o ESP32, conecte e pare a busca
                         if (it.name == esp32Name || it.address == esp32MacAddress) {
@@ -239,20 +232,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun connectToBluetoothDevice(device: BluetoothDevice, onFailure: (() -> Unit)? = null) {
+    private fun connectToBluetoothDevice(device: BluetoothDevice) {
         try {
-            bluetoothManager.connectToDevice(device, 3, {
-                runOnUiThread {
-                    connectionStatusTextView.text = "Conectado a ${device.name}"
-                    Toast.makeText(this, "Conectado a ${device.name}", Toast.LENGTH_SHORT).show()
+            bluetoothManager.connectToDevice(
+                device,
+                onConnectionSuccess = {
+                    runOnUiThread {
+                        connectionStatusTextView.text = "Conectado a ${device.name}"
+                        Toast.makeText(this, "Conectado a ${device.name}", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onConnectionFailed = {
+                    runOnUiThread {
+                        connectionStatusTextView.text = "Conexão falhou"
+                        Toast.makeText(this, "Falha: ${it.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }, {
-                runOnUiThread {
-                    connectionStatusTextView.text = "Conexão falhou"
-                    Toast.makeText(this, "Falha: ${it.message}", Toast.LENGTH_SHORT).show()
-                }
-                onFailure?.invoke() // Chama o callback de falha se houver um
-            })
+            )
         } catch (e: SecurityException) {
             Toast.makeText(this, "Erro de permissão Bluetooth", Toast.LENGTH_SHORT).show()
         }

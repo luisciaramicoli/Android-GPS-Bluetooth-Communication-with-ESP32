@@ -1,22 +1,20 @@
 package com.andreseptian.realtimegpsdata
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import android.os.Build
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.RecyclerView
+import android.bluetooth.BluetoothDevice
 
 /**
  * Classe utilitária para gerenciar as permissões de localização e Bluetooth.
@@ -92,48 +90,5 @@ class PermissionHandler(private val activity: AppCompatActivity) {
                 onPermissionDenied()
             }
         }
-    }
-}
-
-/**
- * Este BroadcastReceiver é acionado quando o serviço de localização é encerrado
- * e tenta reiniciá-lo automaticamente.
- */
-class RestartServiceReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        Log.d("RestartServiceReceiver", "Serviço LocationService recebido. Tentando reiniciar o serviço.")
-        context.startService(Intent(context, LocationService::class.java))
-    }
-}
-
-/**
- * Este BroadcastReceiver lida com a descoberta de dispositivos Bluetooth.
- */
-class BluetoothBroadcastReceiver(
-    private val onDeviceFound: (BluetoothDevice) -> Unit
-) : BroadcastReceiver() {
-
-    override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action
-        if (BluetoothDevice.ACTION_FOUND == action) {
-            val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-            }
-            device?.let {
-                onDeviceFound(it)
-            }
-        }
-    }
-
-    companion object {
-        val intentFilter: IntentFilter
-            get() {
-                val filter = IntentFilter()
-                filter.addAction(BluetoothDevice.ACTION_FOUND)
-                return filter
-            }
     }
 }
