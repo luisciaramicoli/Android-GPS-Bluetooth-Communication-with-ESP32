@@ -67,9 +67,11 @@ class MainActivity : AppCompatActivity() {
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
         bluetoothRecyclerView.adapter = bluetoothDeviceAdapter
 
+        // --- CORREÇÃO APLICADA AQUI ---
+        // O botão agora chama a nova função startDiscoveryForAutoConnect()
         findViewById<TextView>(R.id.btn_scan_bluetooth).setOnClickListener {
             ensureBluetoothPermission {
-                scanBluetoothDevices()
+                startDiscoveryForAutoConnect()
             }
         }
 
