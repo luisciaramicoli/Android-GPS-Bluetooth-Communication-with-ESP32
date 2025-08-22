@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothRecyclerView: RecyclerView
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothDeviceAdapter: BluetoothDeviceAdapter
+    private lateinit var locationManager: LocationManager // Adicionando a instância de LocationManager
 
     private val bluetoothDevices = mutableListOf<BluetoothDevice>()
     private var bluetoothReceiver: BroadcastReceiver? = null
@@ -60,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         bluetoothRecyclerView = findViewById(R.id.rv_bluetooth_devices)
 
         bluetoothManager = BluetoothManager(this)
+        locationManager = LocationManager(this) // Inicializando a instância de LocationManager
 
         bluetoothDeviceAdapter = BluetoothDeviceAdapter(bluetoothDevices) { device ->
             connectToBluetoothDevice(device)
@@ -67,8 +69,7 @@ class MainActivity : AppCompatActivity() {
         bluetoothRecyclerView.layoutManager = LinearLayoutManager(this)
         bluetoothRecyclerView.adapter = bluetoothDeviceAdapter
 
-        // --- CORREÇÃO APLICADA AQUI ---
-        // O botão agora chama a nova função startDiscoveryForAutoConnect()
+        // O botão de escanear agora inicia a descoberta
         findViewById<TextView>(R.id.btn_scan_bluetooth).setOnClickListener {
             ensureBluetoothPermission {
                 startDiscoveryForAutoConnect()
@@ -78,14 +79,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.btn_stop_connection).setOnClickListener {
             stopBluetoothConnection()
         }
-
-        // Inicia a atualização de localização
-        startLocationUpdates()
         
-        // --- CHAMADA PARA A FUNÇÃO DE CONEXÃO AUTOMÁTICA ---
-        // A lógica de conexão automática é iniciada logo após a inicialização da tela.
+        // Garante que as permissões são verificadas e a conexão automática e a localização são iniciadas
         ensureBluetoothPermission {
             autoConnectToEsp32()
+            startLocationUpdates()
         }
     }
 
@@ -122,15 +120,15 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1001 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            // Se as permissões forem concedidas, tente a conexão automática novamente
+            // Se as permissões forem concedidas, tente a conexão automática e inicie as atualizações de localização
             autoConnectToEsp32()
+            startLocationUpdates()
         } else {
-            Toast.makeText(this, "Permissões Bluetooth negadas", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Permissões Bluetooth e/ou de Localização negadas", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun startLocationUpdates() {
-        val locationManager = LocationManager(this)
         locationManager.startLocationUpdates { latitude, longitude, speed ->
             runOnUiThread {
                 latitudeTextView.text = "%.5f".format(latitude)
