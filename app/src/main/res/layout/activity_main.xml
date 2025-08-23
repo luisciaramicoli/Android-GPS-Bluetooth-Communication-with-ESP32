@@ -1,183 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/verde_escuro"
     tools:context=".MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="14dp"
+            android:fontFamily="sans-serif"
             android:gravity="center"
             android:text="@string/get_current_location"
-            android:textColor="@color/branco_quente"
+            android:textColor="#651FFF"
             android:textSize="28sp"
             android:textStyle="bold" />
 
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="42dp"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/verde_claro"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:contentPadding="16dp">
+            android:gravity="center"
+            android:orientation="vertical">
 
+            <!-- Header Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:weightSum="3">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/gps_data"
-                    android:textColor="@color/branco_quente"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/latitude"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@color/verde_acento" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal"
-                    android:weightSum="3">
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/longitude"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/latitude"
-                            android:textColor="@color/branco_quente"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_latitude"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/dash"
-                            android:textColor="@color/verde_acento"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/longitude"
-                            android:textColor="@color/branco_quente"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_longitude"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/dash"
-                            android:textColor="@color/verde_acento"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/speed"
-                            android:textColor="@color/branco_quente"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_speed"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/dash"
-                            android:textColor="@color/verde_acento"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </LinearLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/speed"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/verde_claro"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:contentPadding="16dp">
-
+            <!-- Data Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:weightSum="3"
+                android:layout_marginTop="8dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tv_latitude"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/bluetooth"
-                    android:textColor="@color/branco_quente"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="@string/dash"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
 
                 <TextView
-                    android:id="@+id/tv_connection_status"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tv_longitude"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/connection_status"
-                    android:textColor="@color/verde_acento"
-                    android:textSize="18sp" />
+                    android:text="@string/dash"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/tv_speed"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:text="@string/dash"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+            </LinearLayout>
 
-                   <Button
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@android:color/darker_gray" />
+
+            <!-- Bluetooth Section -->
+            <Button
+                android:id="@+id/btn_scan_bluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:text="@string/scan_bluetooth_devices"
+                android:contentDescription="@string/scan_bluetooth_devices" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_bluetooth_devices"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/btn_stop_connection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:text="@string/stop_connection"
+                android:contentDescription="@string/stop_connection" />
+
+            <TextView
+                android:id="@+id/tv_connection_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="@string/connection_status"
+                android:textColor="@android:color/black"
+                android:textSize="16sp" />
+                <Button
                         android:id="@+id/btn_start_service"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -190,18 +161,6 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:text="Parar Serviço" />
-                </LinearLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rv_bluetooth_devices"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp"
-                    android:layout_marginTop="16dp"
-                    android:visibility="gone"
-                    android:padding="8dp" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </LinearLayout>
     </LinearLayout>
-
 </ScrollView>
