@@ -20,15 +20,13 @@ class BluetoothManager(private val context: Context) {
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager)?.adapter
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
-    private var isConnected = false
+    
+    // CORREÇÃO: A variável agora é publicamente legível, mas privadamente editável.
+    var isConnected = false
+        private set
 
     // UUID padrão para SPP (Serial Port Profile)
     private val uuidSpp = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-
-    @Suppress("unused")
-    fun isBluetoothEnabled(): Boolean {
-        return bluetoothAdapter?.isEnabled == true
-    }
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(
@@ -41,7 +39,6 @@ class BluetoothManager(private val context: Context) {
             return
         }
 
-        // Verifica permissões necessárias
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             onConnectionFailed(SecurityException("Permissão BLUETOOTH_CONNECT não concedida."))
             return
@@ -49,12 +46,10 @@ class BluetoothManager(private val context: Context) {
 
         thread {
             try {
-                // Tenta fechar qualquer conexão anterior
                 closeConnection()
 
-                // Cria o socket e tenta conectar
                 bluetoothSocket = device.createRfcommSocketToServiceRecord(uuidSpp)
-                bluetoothAdapter?.cancelDiscovery() // Cancela a descoberta para otimizar a conexão
+                bluetoothAdapter?.cancelDiscovery()
                 bluetoothSocket?.connect()
                 outputStream = bluetoothSocket?.outputStream
                 isConnected = true
@@ -75,7 +70,7 @@ class BluetoothManager(private val context: Context) {
                 Log.d("BluetoothManager", "Dados enviados: $data")
             } catch (e: IOException) {
                 Log.e("BluetoothManager", "Falha ao enviar dados: ${e.message}")
-                isConnected = false
+                isConnected = false // Atualiza o status se o envio falhar
             }
         } else {
             Log.e("BluetoothManager", "Bluetooth não está conectado")
@@ -86,10 +81,13 @@ class BluetoothManager(private val context: Context) {
         try {
             outputStream?.close()
             bluetoothSocket?.close()
-            isConnected = false
-            Log.d("BluetoothManager", "Conexão Bluetooth fechada.")
         } catch (e: IOException) {
             Log.e("BluetoothManager", "Erro ao fechar conexão: ${e.message}")
+        } finally {
+            isConnected = false
+            outputStream = null
+            bluetoothSocket = null
+            Log.d("BluetoothManager", "Conexão Bluetooth fechada.")
         }
     }
 }
