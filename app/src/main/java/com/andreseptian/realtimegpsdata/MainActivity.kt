@@ -113,8 +113,6 @@ class MainActivity : AppCompatActivity() {
         tvLongitude = findViewById(R.id.tv_longitude)
         tvSpeed = findViewById(R.id.tv_speed)
         tvStatus = findViewById(R.id.tv_connection_status)
-        // CORREÇÃO: IDs dos botões e RecyclerView ajustados.
-        // Certifique-se de que seu activity_main.xml tenha estes IDs.
         btnStartService = findViewById(R.id.btn_start_service)
         btnStopService = findViewById(R.id.btn_stop_service)
         btnScanBluetooth = findViewById(R.id.btn_scan_bluetooth)
@@ -137,8 +135,9 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun scanBluetoothDevices() {
+        // CORREÇÃO: Adicionado '?' para chamada segura
         if (bluetoothAdapter?.isDiscovering == true) {
-            bluetoothAdapter.cancelDiscovery()
+            bluetoothAdapter?.cancelDiscovery()
         }
         
         if (bluetoothAdapter?.isEnabled == false) {
@@ -212,8 +211,9 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
+        // CORREÇÃO: Adicionado '?' para chamada segura
         if (bluetoothAdapter?.isDiscovering == true) {
-            bluetoothAdapter.cancelDiscovery()
+            bluetoothAdapter?.cancelDiscovery()
         }
         try {
             unregisterReceiver(receiver)
