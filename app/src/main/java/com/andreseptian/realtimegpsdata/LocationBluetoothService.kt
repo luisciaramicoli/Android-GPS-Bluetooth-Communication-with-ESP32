@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -25,12 +26,14 @@ class LocationBluetoothService : Service() {
         private const val ESP32_DEVICE_ADDRESS = "68:25:DD:F1:C1:C2" // Mude para o seu MAC
     }
 
+    // Gerenciadores para cada responsabilidade
     private lateinit var locationManager: LocationManager
     private lateinit var bluetoothManager: BluetoothManager
-    private var targetDevice: android.bluetooth.BluetoothDevice? = null
+    private var targetDevice: BluetoothDevice? = null
 
     override fun onCreate() {
         super.onCreate()
+        // Instancia os gerenciadores
         locationManager = LocationManager(this)
         bluetoothManager = BluetoothManager(this)
 
