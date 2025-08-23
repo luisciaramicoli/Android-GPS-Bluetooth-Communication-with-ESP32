@@ -18,7 +18,7 @@
             android:layout_marginTop="14dp"
             android:fontFamily="sans-serif"
             android:gravity="center"
-            android:text="@string/get_current_location"
+            android:text="Realtime GPS Data"
             android:textColor="#651FFF"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -42,39 +42,39 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/latitude"
+                    android:text="Latitude"
                     android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/longitude"
+                    android:text="Longitude"
                     android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/speed"
+                    android:text="Speed"
                     android:textColor="@android:color/black"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- Data Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:orientation="horizontal"
-                android:weightSum="3"
-                android:layout_marginTop="8dp">
+                android:weightSum="3">
 
                 <TextView
                     android:id="@+id/tv_latitude"
@@ -82,7 +82,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/dash"
+                    android:text="-"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
 
@@ -92,7 +92,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/dash"
+                    android:text="-"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
 
@@ -102,7 +102,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="@string/dash"
+                    android:text="-"
                     android:textColor="@android:color/black"
                     android:textSize="16sp" />
             </LinearLayout>
@@ -121,8 +121,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="16dp"
-                android:text="@string/scan_bluetooth_devices"
-                android:contentDescription="@string/scan_bluetooth_devices" />
+                android:text="Scan Bluetooth Devices" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_bluetooth_devices"
@@ -136,8 +135,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="16dp"
-                android:text="@string/stop_connection"
-                android:contentDescription="@string/stop_connection" />
+                android:text="Stop Connection" />
 
             <TextView
                 android:id="@+id/tv_connection_status"
@@ -145,22 +143,33 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="@string/connection_status"
+                android:text="Connection Status: Disconnected"
                 android:textColor="@android:color/black"
                 android:textSize="16sp" />
-                <Button
-                        android:id="@+id/btn_start_service"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Iniciar Serviço" />
 
-                    <Button
-                        android:id="@+id/btn_stop_service"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Parar Serviço" />
+            <!-- Service Control Buttons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_start_service"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Iniciar Serviço" />
+
+                <Button
+                    android:id="@+id/btn_stop_service"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Parar Serviço" />
+            </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
