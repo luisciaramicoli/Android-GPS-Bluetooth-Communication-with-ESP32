@@ -8,6 +8,8 @@
 
     <!-- Permissão para rodar serviço em primeiro plano (essencial para o app) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- APRIMORAMENTO: Permissão específica para serviço de localização (Android 14+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <!-- Permissão para localização em segundo plano (Android 10+) -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
@@ -23,6 +25,10 @@
     <!-- Permissão para notificações (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- APRIMORAMENTO: Declara que o app requer hardware específico para funcionar -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="true" />
+
 
     <application
         android:allowBackup="true"
@@ -30,7 +36,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher" 
         android:supportsRtl="true"
         android:theme="@style/Theme.RealtimeGPSData"
         tools:targetApi="31">
