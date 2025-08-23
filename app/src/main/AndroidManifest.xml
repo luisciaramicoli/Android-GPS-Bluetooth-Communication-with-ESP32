@@ -2,23 +2,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissões de Bluetooth (para Android 12+) -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Permissões Essenciais de Localização -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Permissões de Bluetooth (Legado, para Android 11 e inferior) -->
+    <!-- Permissão para rodar serviço em primeiro plano (essencial para o app) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Permissão para localização em segundo plano (Android 10+) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- Permissões de Bluetooth (para Android 11 e inferior) -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
 
-    <!-- Permissões de Localização -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Permissão crítica para localização em segundo plano -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-
-    <!-- Permissões para Serviço em Primeiro Plano -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Permissões de Bluetooth (para Android 12 e superior) -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
+    <!-- Permissão para notificações (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
 
     <application
@@ -31,7 +34,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RealtimeGPSData"
         tools:targetApi="31">
-
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -41,14 +43,24 @@
             </intent-filter>
         </activity>
 
-        <!-- 
-        CORREÇÃO: O nome do serviço foi atualizado para corresponder à classe que criamos.
-        -->
+        <!-- Declaração do Serviço em Primeiro Plano -->
         <service
             android:name=".LocationBluetoothService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
 
+        <!-- Declaração do BroadcastReceiver para reiniciar o serviço -->
+        <receiver
+            android:name=".RestartServiceReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.andreseptian.realtimegpsdata.RESTART_SERVICE" />
+            </intent-filter>
+        </receiver>
+
     </application>
+
 </manifest>
